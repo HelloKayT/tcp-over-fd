@@ -240,7 +240,10 @@ int main(int argc, char* argv[]){
     dev = pico_eth_create("mydev", &mac, input, output);
     if (!dev)
         return -1;
-    writePCAPHeader(driverOutput);
+    if (server) {
+        writePCAPHeader(driverOutput);
+        writePCAPHeader(driverInput);
+    }
 
     uint16_t listen_port = server ? 1234 : 1235;
     uint16_t remote_port = 1234;
