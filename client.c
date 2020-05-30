@@ -1,4 +1,5 @@
 #include "client.h"
+#include <arpa/inet.h>
 
 void compare_results(pico_time __attribute__((unused)) now, void __attribute__((unused)) *arg)
 {
@@ -24,7 +25,7 @@ static char *buffer1[1024];
 static char *buffer0 = "abcdefghijklmnop";
 static int sent = 0;
 //#define TCPSIZ (1024 * 1024 * 5)
-#define TCPSIZ (10)
+#define TCPSIZ (16)
 //#define INFINITE_TCPTEST
 
 void cb_tcpclient(uint16_t ev, struct pico_socket *s)
@@ -46,7 +47,7 @@ void cb_tcpclient(uint16_t ev, struct pico_socket *s)
                 printf("Packet payload received ");
                 int i;
                 for (i = 0; i < r; i++) {
-                    printf("%c", (buffer1 + r_size)[i]);
+                    printf("%c", i, ((uint8_t *)(buffer1 + r_size))[i]);
                 }
                 printf("\n");
                 r_size += r;
@@ -118,13 +119,15 @@ void cb_tcpclient(uint16_t ev, struct pico_socket *s)
 int connect_client(struct pico_socket *s, struct pico_ip4* remote, uint16_t remote_port, uint16_t *listen_port) {
     s = pico_socket_open(PICO_PROTO_IPV4, PICO_PROTO_TCP, &cb_tcpclient);
     struct pico_ip4 inaddr = {0};
-    int ret = pico_socket_bind(s, &inaddr, listen_port);
+
+    uint16_t listen_port_temp = htons(*listen_port);
+    int ret = pico_socket_bind(s, &inaddr, &listen_port_temp);
     if (ret < 0) {
         printf("%s: error binding socket to port %u: %s\n", __FUNCTION__, short_be(*listen_port), strerror(pico_err));
         return ret;
     }
 
-    ret = pico_socket_connect(s, remote, remote_port);
+    ret = pico_socket_connect(s, remote, htons(remote_port));
     if (ret != 0) {
         printf("%s: error connecting to port %u\n", __FUNCTION__, short_be(remote_port));
         return ret;
