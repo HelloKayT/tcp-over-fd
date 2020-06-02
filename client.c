@@ -22,7 +22,7 @@ void compare_results(pico_time __attribute__((unused)) now, void __attribute__((
 }
 
 static char *buffer1[1024];
-static char *buffer0 = "abcdefghijklmnop";
+static char *buffer0 = "abcdefghijklmnopqrstuvwxyz123456";
 static int sent = 0;
 //#define TCPSIZ (1024 * 1024 * 5)
 #define TCPSIZ (16)
@@ -41,13 +41,13 @@ void cb_tcpclient(uint16_t ev, struct pico_socket *s)
 
     if (ev & PICO_SOCK_EV_RD) {
         do {
-            r = pico_socket_read(s, buffer1 + r_size, TCPSIZ - r_size);
+            r = pico_socket_read(s, buffer1 + r_size, 16);
             if (r > 0) {
                 printf("SOCKET READ - %d\n", r);
-                printf("Packet payload received ");
+                printf("Packet payload received to offset %d\n", r_size);
                 int i;
                 for (i = 0; i < r; i++) {
-                    printf("%c", i, ((uint8_t *)(buffer1 + r_size))[i]);
+                    printf("%c", ((uint8_t *)(buffer1 + r_size))[i]);
                 }
                 printf("\n");
                 r_size += r;
@@ -84,25 +84,24 @@ void cb_tcpclient(uint16_t ev, struct pico_socket *s)
     }
 
     if (ev & PICO_SOCK_EV_WR) {
-        if (w_size < TCPSIZ) {
-            if (sent < 1) {
-                w = pico_socket_write(s, buffer0 + w_size, TCPSIZ - w_size);
-                if (w > 0) {
-                    printf("SOCKET WRITTEN - %d\n", w);
-                    printf("Packet payload written ");
-                    int i;
-                    for (i = 0; i< w; i++) {
-                        printf("%c", (buffer0 + w_size)[i]);
-                    }
-                    printf("\n");
-
-                    w_size += w;
-                    if (w < 0)
-                        exit(5);
+       if (sent < 2) {
+            w = pico_socket_write(s, buffer0 + w_size, 16);
+            if (w > 0) {
+                printf("SOCKET WRITTEN - %d\n", w);
+                printf("Packet payload written ");
+                int i;
+                for (i = 0; i< w; i++) {
+                    printf("%c", (buffer0 + w_size)[i]);
                 }
+                printf("\n");
 
+                w_size += w;
+                if (w < 0)
+                    exit(5);
             }
-        } else {
+            sent++;
+        }
+        else {
 #ifdef INFINITE_TCPTEST
             w_size = 0;
             return;
