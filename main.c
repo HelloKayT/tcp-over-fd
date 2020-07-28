@@ -163,13 +163,29 @@ struct pico_device *pico_eth_create(const char *name, const uint8_t *mac, FILE* 
     if(!eth_dev) {
         return NULL;
     }
+    struct pico_ethdev * eth_struct = PICO_ZALLOC(sizeof(struct pico_ethdev));
+    if(!eth_struct) {
+        return NULL;
+    }
+
+    (eth_struct->mac).padding[0] = 0;
+    (eth_struct->mac).padding[1] = 0;
+
+    (eth_struct->mac).addr[0] = 0xab;
+    (eth_struct->mac).addr[1] = 0x00;
+    (eth_struct->mac).addr[2] = 0xbc;
+    (eth_struct->mac).addr[3] = 0x00;
+    (eth_struct->mac).addr[4] = 0xcd;
+    (eth_struct->mac).addr[5] = 0x00;
+
     eth_dev->send = pico_eth_send;
     eth_dev->poll = pico_eth_poll;
+    eth_dev->eth = eth_struct;
     driverInput = input;
     driverOutput = output;
 
     /* Register the device in picoTCP */
-    if( 0 != pico_device_init(eth_dev, name, NULL)) {
+    if( 0 != pico_device_init(eth_dev, name, (eth_struct->mac).addr)) {
         dbg("Device init failed.\n");
         PICO_FREE(eth_dev);
         return NULL;
